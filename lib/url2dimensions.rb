@@ -45,7 +45,13 @@ module URL2Dimensions
     end
     [
       ->_{
-        _ = FastImage.size url
+        _ = begin
+          FastImage.size url
+        rescue OpenSSL::SSL::SSLError => e
+          # puts e
+          sleep 5
+          retry
+        end
         [*_, url] if _
       },
       ->_{ if %w{ imgur com } == URI(_).host.split(?.).last(2)
