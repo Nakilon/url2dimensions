@@ -58,10 +58,10 @@ module URL2Dimensions
         dimensions = begin
           Imgur::imgur_to_array _
         rescue Imgur::Error => e
-          raise Error404.new _ if e.to_s.start_with? "Imgur error: bad link pattern"
+          raise Error404.new _ if e.to_s.start_with? "Imgur error: bad link pattern \""
           raise
         end
-        raise Error404.new _ if !dimensions || dimensions.empty?
+        raise Error404.new _ if !dimensions || dimensions.empty?    # TODO test case about .empty?
         [
           *dimensions.max_by{ |u, x, y, t| x * y }.take(3).rotate(1),
           *dimensions.map(&:first),
@@ -120,6 +120,21 @@ if $0 == __FILE__
   STDOUT.sync = true
   puts "self testing..."
 
+  require "minitest/mock"
+  ANY_IMGUR_IMAGE_URL = "https://imgur.com/smth"
+  begin
+    fail (( Imgur.stub :imgur_to_array, ->*{ raise Imgur::Error.new "bad link pattern #{ANY_IMGUR_IMAGE_URL.inspect}" } do
+      URL2Dimensions::get_dimensions ANY_IMGUR_IMAGE_URL
+    end ))
+  rescue URL2Dimensions::Error404
+  end
+  begin
+    fail (( Imgur.stub :imgur_to_array, ->*{ nil } do
+      URL2Dimensions::get_dimensions ANY_IMGUR_IMAGE_URL
+    end ))
+  rescue URL2Dimensions::Error404
+  end
+
   [
     ["http://minus.com/lkP3hgRJd9npi", URL2Dimensions::Error404],
     ["http://example.com", URL2Dimensions::ErrorUnknown],
@@ -150,8 +165,6 @@ if $0 == __FILE__
     ["https://500px.com/photo/112134597/milky-way-by-tom-hall", [4928, 2888, "https://drscdn.500px.org/photo/112134597/m%3D2048_k%3D1_a%3D1/v2?client_application_id=18857&webp=true&sig=c0d31cf9395d7849fbcce612ca9909225ec16fd293a7f460ea15d9e6a6c34257"]],
     ["https://i.redd.it/si758zk7r5xz.jpg", URL2Dimensions::Error404],
     ["http://www.cutehalloweencostumeideas.org/wp-content/uploads/2017/10/Niagara-Falls_04.jpg", URL2Dimensions::Error404],
-    ["https://imgur.com/gallery/YO49F.", URL2Dimensions::Error404], # expect "Imgur error: bad link pattern"
-    ["https://imgur.com/mM4Dh7Z", URL2Dimensions::Error404], # redirects to https://i.imgur.com/removed.png
   ].each do |input, expectation|
     puts "testing #{input}"
     if expectation.is_a? Class
