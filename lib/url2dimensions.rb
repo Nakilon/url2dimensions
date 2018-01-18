@@ -104,8 +104,8 @@ module URL2Dimensions
       end },
       ->_{
         raise Error404.new _ if "404" == begin
-          NetHTTPUtils.get_response _
-        rescue SocketError => e
+          NetHTTPUtils.get_response _, max_sslerror_retry_delay: 100
+        rescue SocketError, OpenSSL::SSL::SSLError => e
           raise Error404.new _
         end.code
       },
@@ -131,6 +131,18 @@ if $0 == __FILE__
   begin
     fail (( Imgur.stub :imgur_to_array, ->*{ nil } do
       URL2Dimensions::get_dimensions ANY_IMGUR_IMAGE_URL
+    end ))
+  rescue URL2Dimensions::Error404
+  end
+  begin
+    fail (( NetHTTPUtils.stub :get_response, ->*{ raise SocketError.new } do
+      URL2Dimensions::get_dimensions "http://example.com/"
+    end ))
+  rescue URL2Dimensions::Error404
+  end
+  begin
+    fail (( NetHTTPUtils.stub :get_response, ->*{ raise OpenSSL::SSL::SSLError.new } do
+      URL2Dimensions::get_dimensions "http://example.com/"
     end ))
   rescue URL2Dimensions::Error404
   end
