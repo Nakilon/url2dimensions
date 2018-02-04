@@ -105,7 +105,7 @@ module URL2Dimensions
       ->_{
         raise Error404.new _ if "404" == begin
           NetHTTPUtils.get_response _, timeout: 300, max_sslerror_retry_delay: 100
-        rescue SocketError, OpenSSL::SSL::SSLError, Net::OpenTimeout => e
+        rescue SocketError, OpenSSL::SSL::SSLError, Net::OpenTimeout, Errno::ETIMEDOUT => e
           raise Error404.new _
         end.code
       },
