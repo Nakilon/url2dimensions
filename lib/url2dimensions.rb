@@ -62,10 +62,14 @@ module URL2Dimensions
           raise
         end
         raise Error404.new _ if !dimensions || dimensions.empty?    # TODO test case about .empty?
-        [
-          *dimensions.max_by{ |u, x, y, t| x * y }.take(3).rotate(1),
-          *dimensions.map(&:first),
-        ]
+        if dimensions.size == 1
+          dimensions.first.take(3).rotate(1)
+        else
+          [
+            *dimensions.max_by{ |u, x, y, t| x * y }.take(3).rotate(1),
+            *dimensions.map(&:first),
+          ]
+        end
       end },
       ->_{ if %r{^https://www\.flickr\.com/photos/[^/]+/(?<id>[^/]+)} =~ _ ||
               %r{^https://flic\.kr/p/(?<id>[^/]+)$} =~ _
@@ -151,17 +155,14 @@ if $0 == __FILE__
     ["http://minus.com/lkP3hgRJd9npi", URL2Dimensions::Error404],
     ["http://example.com", URL2Dimensions::ErrorUnknown],
     ["http://i.imgur.com/7xcxxkR.gifv", :skipped],
-    ["http://imgur.com/HQHBBBD", [1024, 768, "https://i.imgur.com/HQHBBBD.jpg",
-                                             "https://i.imgur.com/HQHBBBD.jpg"]],
+    ["http://imgur.com/HQHBBBD", [1024, 768, "https://i.imgur.com/HQHBBBD.jpg"]],
     ["http://imgur.com/a/AdJUK", [1456, 2592, "https://i.imgur.com/Yunpxnx.jpg",
                                               "https://i.imgur.com/Yunpxnx.jpg",
                                               "https://i.imgur.com/3afw2aF.jpg",
                                               "https://i.imgur.com/2epn2nT.jpg"]],
     # TODO maybe we should do smth else with video -- maybe raise?
-    ["https://imgur.com/9yaMdJq", [720, 404, "https://i.imgur.com/9yaMdJq.mp4",
-                                             "https://i.imgur.com/9yaMdJq.mp4"]],
-    ["http://imgur.com/gallery/dCQprEq/new", [5760, 3840, "https://i.imgur.com/dCQprEq.jpg",
-                                                          "https://i.imgur.com/dCQprEq.jpg"]],
+    ["https://imgur.com/9yaMdJq", [720, 404, "https://i.imgur.com/9yaMdJq.mp4"]],
+    ["http://imgur.com/gallery/dCQprEq/new", [5760, 3840, "https://i.imgur.com/dCQprEq.jpg"]],
     ["https://www.flickr.com/photos/tomas-/17220613278/", URL2Dimensions::Error404],
     ["https://www.flickr.com/photos/16936123@N07/18835195572", URL2Dimensions::Error404],
     ["https://www.flickr.com/photos/44133687@N00/17380073505/", [3000, 2000, "https://farm8.staticflickr.com/7757/17380073505_ed5178cc6a_o.jpg"]],                            # trailing slash
