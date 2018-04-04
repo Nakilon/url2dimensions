@@ -40,18 +40,19 @@ module URL2Dimensions
     # return :skipped if %w{ minus com } == .host.split(?.).last(2)
 
     fi = lambda do |url|
-      _ = FastImage.size url
+      _ = FastImage.size url, http_header: {"User-Agent" => "Mozilla"}
       _ ? [*_, url] : fail
     end
     [
       ->_{
-        _ = begin
-          FastImage.size url
-        rescue OpenSSL::SSL::SSLError => e
-          # puts e
-          sleep 5
-          retry
-        end
+        timeout = 1
+        # _ = begin
+          _ = FastImage.size url, http_header: {"User-Agent" => "Mozilla"}
+        # rescue OpenSSL::SSL::SSLError => e
+        #   puts "#{e} at #{__LINE__}"
+        #   sleep timeout *= 2
+        #   retry
+        # end
         [*_, url] if _
       },
       ->_{ if %w{ imgur com } == URI(_).host.split(?.).last(2)
@@ -108,7 +109,7 @@ module URL2Dimensions
       end },
       ->_{
         raise Error404.new _ if "404" == begin
-          NetHTTPUtils.get_response _, timeout: 300, max_sslerror_retry_delay: 100
+          NetHTTPUtils.get_response _, header: {"User-Agent" => "Mozilla"}
         rescue SocketError, OpenSSL::SSL::SSLError, Net::OpenTimeout, Errno::ETIMEDOUT => e
           raise Error404.new _
         end.code
@@ -152,6 +153,7 @@ if $0 == __FILE__
   end
 
   [
+    ["http://www.aeronautica.difesa.it/organizzazione/REPARTI/divolo/PublishingImages/6%C2%B0%20Stormo/2013-decollo%20al%20tramonto%20REX%201280.jpg", [1280, 853, "http://www.aeronautica.difesa.it/organizzazione/REPARTI/divolo/PublishingImages/6%C2%B0%20Stormo/2013-decollo%20al%20tramonto%20REX%201280.jpg"]],
     ["http://minus.com/lkP3hgRJd9npi", URL2Dimensions::Error404],
     ["http://example.com", URL2Dimensions::ErrorUnknown],
     ["http://i.imgur.com/7xcxxkR.gifv", :skipped],
