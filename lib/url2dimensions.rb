@@ -92,14 +92,15 @@ module URL2Dimensions
         end
       end },
       ->_{ if %r{https?://[^.]+.wiki[mp]edia\.org/wiki(/[^/]+)*/(?<id>File:.+)} =~ _
-        _ = JSON.parse NetHTTPUtils.request_data "https://commons.wikimedia.org/w/api.php", form: {
+        imageinfo = JSON.parse( NetHTTPUtils.request_data "https://commons.wikimedia.org/w/api.php", form: {
           format: "json",
           action: "query",
           prop: "imageinfo",
           iiprop: "url",
           titles: id,
-        }
-        fi[_["query"]["pages"].values.first["imageinfo"].first["url"]]
+        } )["query"]["pages"].values.first["imageinfo"]
+        raise ErrorUnknown.new _ unless imageinfo
+        fi[imageinfo.first["url"]]
       end },
       ->_{ if %r{^https://500px\.com/photo/(?<id>[^/]+)/[^/]+$} =~ _
         (JSON.parse NetHTTPUtils.request_data "https://api.500px.com/v1/photos/#{id}", form: {
@@ -176,6 +177,7 @@ if $0 == __FILE__
     ["https://www.flickr.com/photos/patricksloan/18230541413/sizes/l", [2048, 491, "https://farm6.staticflickr.com/5572/18230541413_fec4783d79_k.jpg"]],
     ["https://flic.kr/p/vPvCWJ", [2048, 1365, "https://farm1.staticflickr.com/507/19572004110_d44d1b4ead_k.jpg"]],
     ["https://en.wikipedia.org/wiki/Prostitution_by_country#/media/File:Prostitution_laws_of_the_world.PNG", [1427, 628, "https://upload.wikimedia.org/wikipedia/commons/e/e8/Prostitution_laws_of_the_world.PNG"]],
+    ["https://en.wikipedia.org/wiki/Third_Party_System#/media/File:United_States_presidential_election_results,_1876-1892.svg", URL2Dimensions::ErrorUnknown],
     ["http://commons.wikimedia.org/wiki/File:Eduard_Bohlen_anagoria.jpg", [4367, 2928, "https://upload.wikimedia.org/wikipedia/commons/0/0d/Eduard_Bohlen_anagoria.jpg"]],
     ["https://500px.com/photo/112134597/milky-way-by-tom-hall", [4928, 2888, "https://drscdn.500px.org/photo/112134597/m%3D2048_k%3D1_a%3D1/v2?client_application_id=18857&webp=true&sig=c0d31cf9395d7849fbcce612ca9909225ec16fd293a7f460ea15d9e6a6c34257"]],
     ["https://i.redd.it/si758zk7r5xz.jpg", URL2Dimensions::Error404],
